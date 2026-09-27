@@ -1,0 +1,52 @@
+// =====================================================================
+// Task 4: Google Firebase Realtime Dashboard Client
+// Developer: PRAVEEN. A
+// =====================================================================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+// Firebase Project Credentials
+const firebaseConfig = {
+  apiKey: "AIzaSyC_YourApiKeyHere",
+  authDomain: "praveen-iot-dashboard.firebaseapp.com",
+  databaseURL: "https://praveen-iot-dashboard-default-rtdb.firebaseio.com",
+  projectId: "praveen-iot-dashboard",
+  storageBucket: "praveen-iot-dashboard.appspot.com",
+  messagingSenderId: "1029384756",
+  appId: "1:1029384756:web:abcdef123456"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// DOM Elements
+const bulbToggle = document.getElementById("bulb-switch");
+const tempGauge = document.getElementById("temp-reading");
+const humGauge = document.getElementById("humidity-reading");
+
+// Listen for Realtime Changes from ESP32 or Other Clients
+const bulbRef = ref(db, "devices/bulb/status");
+onValue(bulbRef, (snapshot) => {
+  const isBulbOn = snapshot.val();
+  bulbToggle.checked = isBulbOn;
+  console.log("[FIREBASE SYNC] Bulb Status updated to:", isBulbOn);
+});
+
+// Telemetry Listeners
+onValue(ref(db, "telemetry/temperature"), (snap) => {
+  tempGauge.textContent = snap.val() ? `${snap.val()} °C` : "--";
+});
+
+onValue(ref(db, "telemetry/humidity"), (snap) => {
+  humGauge.textContent = snap.val() ? `${snap.val()} %` : "--";
+});
+
+// User Toggle Switch Event
+bulbToggle.addEventListener("change", (e) => {
+  const newState = e.target.checked;
+  set(bulbRef, newState)
+    .then(() => console.log("[COMMAND TRANSMITTED] Bulb ->", newState))
+    .catch((err) => console.error("Write error:", err));
+});
